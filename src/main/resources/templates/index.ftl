@@ -1,6 +1,15 @@
 <#import "common.ftl" as c>
 <@c.page>
 
+    <#if RequestParameters.purchased??>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>✅ Успіх!</strong> Всі квитки з кошика успішно оформлені!
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    </#if>
+
     <h2>Розклад автобусних рейсів</h2>
     <p class="text-muted">Поточний час: ${currentTime}</p>
 
