@@ -14,7 +14,22 @@
             <div>
                 <a class="btn btn-outline-light" href="/">Головна</a>
                 <a class="btn btn-outline-light" href="/cart">🛒 Кошик</a>
-                <a class="btn btn-outline-light" href="/boarding">Посадкові відомості</a>
+
+                <#-- Посадкові відомості тільки для касирів та адмінів -->
+                <#if Session.user?? && (Session.user.role == 'CASHIER' || Session.user.role == 'ADMIN')>
+                    <a class="btn btn-outline-light" href="/boarding">📋 Посадкові відомості</a>
+                </#if>
+
+                <a class="btn btn-outline-light" href="/about">Про нас</a>
+
+                <#-- Якщо користувач залогінений -->
+                <#if Session.user??>
+                    <a class="btn btn-outline-light" href="/profile">👤 ${Session.user.fullName}</a>
+                    <a class="btn btn-outline-danger" href="/logout">Вийти</a>
+                <#else>
+                    <a class="btn btn-outline-light" href="/login">Вхід</a>
+                    <a class="btn btn-success" href="/register">Реєстрація</a>
+                </#if>
             </div>
         </div>
     </nav>

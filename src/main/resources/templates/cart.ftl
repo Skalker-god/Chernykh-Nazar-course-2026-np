@@ -60,18 +60,32 @@
                     </div>
                     <div class="card-body">
                         <form action="/cart/checkout" method="post">
-                            <div class="form-group">
-                                <label>ПІБ пасажира</label>
-                                <input type="text" name="passengerName" class="form-control"
-                                       placeholder="Іванов Іван Іванович" required>
-                                <small class="form-text text-muted">Вказане ім'я буде на всіх квитках</small>
-                            </div>
+                            <#if user??>
+                                <!-- Якщо залогінений - показуємо дані -->
+                                <div class="alert alert-info">
+                                    <strong>Дані пасажира:</strong> ${user.fullName} (${user.phone})
+                                </div>
+                                <input type="hidden" name="passengerName" value="${user.fullName}">
+                                <input type="hidden" name="passengerPhone" value="${user.phone}">
+                            <#else>
+                                <!-- Якщо не залогінений - просимо ввести -->
+                                <div class="form-group">
+                                    <label>ПІБ пасажира</label>
+                                    <input type="text" name="passengerName" class="form-control"
+                                           placeholder="Іванов Іван Іванович" required>
+                                </div>
 
-                            <div class="form-group">
-                                <label>Телефон</label>
-                                <input type="tel" name="passengerPhone" class="form-control"
-                                       placeholder="+380501234567" pattern="\+380[0-9]{9}" required>
-                            </div>
+                                <div class="form-group">
+                                    <label>Телефон</label>
+                                    <input type="tel" name="passengerPhone" class="form-control"
+                                           placeholder="+380501234567" pattern="\+380[0-9]{9}" required>
+                                </div>
+
+                                <div class="alert alert-warning">
+                                    💡 <a href="/login">Увійдіть</a> або <a href="/register">зареєструйтесь</a>,
+                                    щоб не вводити дані кожного разу
+                                </div>
+                            </#if>
 
                             <div class="form-group">
                                 <div class="form-check">

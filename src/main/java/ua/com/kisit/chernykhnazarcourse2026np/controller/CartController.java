@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import ua.com.kisit.chernykhnazarcourse2026np.entity.User;
 import ua.com.kisit.chernykhnazarcourse2026np.entity.BusRoute;
 import ua.com.kisit.chernykhnazarcourse2026np.entity.Cart;
 import ua.com.kisit.chernykhnazarcourse2026np.entity.Ticket;
@@ -24,6 +25,10 @@ public class CartController {
 
     @Autowired
     private TicketRepository ticketRepository;
+
+    private User getCurrentUser(HttpSession session) {
+        return (User) session.getAttribute("user");
+    }
 
     // Отримати кошик з сесії або створити новий
     private Cart getCart(HttpSession session) {

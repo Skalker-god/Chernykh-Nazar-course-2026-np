@@ -3,6 +3,15 @@
 
     <h2>Оформлення квитка</h2>
 
+    <#if error??>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>❌ Помилка!</strong> ${error}
+            <button type="button" class="close" data-dismiss="alert">
+                <span>&times;</span>
+            </button>
+        </div>
+    </#if>
+
     <#if route??>
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
@@ -80,16 +89,26 @@
                         <input type="hidden" name="destination" id="destinationDirect">
                         <input type="hidden" name="seatNumber" id="seatNumberDirect">
 
-                        <div class="form-group">
-                            <label>ПІБ пасажира</label>
-                            <input type="text" name="passengerName" class="form-control" required>
-                        </div>
+                        <#if user??>
+                            <!-- Якщо залогінений -->
+                            <div class="alert alert-info">
+                                <strong>Дані пасажира:</strong> ${user.fullName} (${user.phone})
+                            </div>
+                            <input type="hidden" name="passengerName" value="${user.fullName}">
+                            <input type="hidden" name="passengerPhone" value="${user.phone}">
+                        <#else>
+                            <!-- Якщо не залогінений -->
+                            <div class="form-group">
+                                <label>ПІБ пасажира</label>
+                                <input type="text" name="passengerName" class="form-control" required>
+                            </div>
 
-                        <div class="form-group">
-                            <label>Телефон</label>
-                            <input type="tel" name="passengerPhone" class="form-control"
-                                   placeholder="+380501234567" required>
-                        </div>
+                            <div class="form-group">
+                                <label>Телефон</label>
+                                <input type="tel" name="passengerPhone" class="form-control"
+                                       placeholder="+380501234567" required>
+                            </div>
+                        </#if>
 
                         <div class="form-group">
                             <div class="form-check">
