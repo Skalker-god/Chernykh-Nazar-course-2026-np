@@ -45,7 +45,11 @@ public class CartController {
     public ModelAndView viewCart(HttpSession session) {
         ModelAndView modelAndView = new ModelAndView("cart");
         Cart cart = getCart(session);
+        User user = (User) session.getAttribute("user");
+
         modelAndView.addObject("cart", cart);
+        modelAndView.addObject("user", user);
+
         return modelAndView;
     }
 

@@ -69,7 +69,6 @@ public class TicketController {
             return new ModelAndView("redirect:/");
         }
 
-        // ⚠️ ВАЖЛИВА ПЕРЕВІРКА: Чи не зайняте вже це місце?
         LocalDate today = LocalDate.now();
         List<Integer> occupiedSeats = ticketRepository.findOccupiedSeats(route, today);
 
