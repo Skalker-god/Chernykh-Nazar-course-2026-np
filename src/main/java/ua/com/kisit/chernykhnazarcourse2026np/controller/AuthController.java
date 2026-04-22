@@ -1,7 +1,6 @@
 package ua.com.kisit.chernykhnazarcourse2026np.controller;
 
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,31 +15,34 @@ import ua.com.kisit.chernykhnazarcourse2026np.repository.UserRepository;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import ua.com.kisit.chernykhnazarcourse2026np.entity.Ticket;
-
-
 import java.time.LocalDateTime;
-
 
 @Controller
 public class AuthController {
 
-    @Autowired
-    private UserRepository userRepository;
+    // ВИПРАВЛЕННЯ 3: константа замість дублювання рядка "redirect:/" 5 разів
+    private static final String REDIRECT_HOME = "redirect:/";
 
-    @Autowired
-    private TicketRepository ticketRepository;
+    // ВИПРАВЛЕННЯ 2: constructor injection замість @Autowired field injection
+    private final UserRepository userRepository;
+    private final TicketRepository ticketRepository;
+    private final BusRouteRepository busRouteRepository;
 
-    @Autowired
-    private BusRouteRepository busRouteRepository;
+    public AuthController(UserRepository userRepository,
+                          TicketRepository ticketRepository,
+                          BusRouteRepository busRouteRepository) {
+        this.userRepository = userRepository;
+        this.ticketRepository = ticketRepository;
+        this.busRouteRepository = busRouteRepository;
+    }
 
     // Сторінка входу
     @GetMapping("/login")
     public ModelAndView loginPage(@RequestParam(required = false) String error,
                                   HttpSession session) {
         if (session.getAttribute("user") != null) {
-            return new ModelAndView("redirect:/");
+            return new ModelAndView(REDIRECT_HOME);
         }
-
         ModelAndView modelAndView = new ModelAndView("login-page");
         if (error != null) {
             modelAndView.addObject("error", "Невірний телефон або пароль");
@@ -53,27 +55,22 @@ public class AuthController {
     public String login(@RequestParam String phone,
                         @RequestParam String password,
                         HttpSession session) {
-
         User user = userRepository.findByPhoneAndPassword(phone, password).orElse(null);
-
         if (user != null && user.getIsActive()) {
+            // ВИПРАВЛЕННЯ 1: User реалізує Serializable — тепер безпечно зберігати в сесії
             session.setAttribute("user", user);
-            return "redirect:/";
+            return REDIRECT_HOME;
         }
-
         return "redirect:/login?error";
     }
-
 
     // Сторінка реєстрації
     @GetMapping("/register")
     public ModelAndView registerPage(@RequestParam(required = false) String error,
                                      HttpSession session) {
-        // Якщо вже залогінений - редірект на головну
         if (session.getAttribute("user") != null) {
-            return new ModelAndView("redirect:/");
+            return new ModelAndView(REDIRECT_HOME);
         }
-
         ModelAndView modelAndView = new ModelAndView("register");
         if (error != null) {
             modelAndView.addObject("error", "Користувач з таким телефоном вже існує");
@@ -87,85 +84,62 @@ public class AuthController {
                            @RequestParam String phone,
                            @RequestParam String password,
                            HttpSession session) {
-
-        // Перевіряємо чи не існує вже такий телефон
         if (userRepository.existsByPhone(phone)) {
             return "redirect:/register?error";
         }
-
-        // Створюємо нового користувача
         User user = new User();
         user.setFullName(fullName);
         user.setPhone(phone);
-        user.setPassword(password); // В реальному проекті треба хешувати!
-        user.setRole(UserRole.PASSENGER); // За замовчуванням - пасажир
+        user.setPassword(password);
+        user.setRole(UserRole.PASSENGER);
         user.setCreatedAt(LocalDateTime.now());
         user.setIsActive(true);
-
         userRepository.save(user);
-
-        // Одразу логінимо
         session.setAttribute("user", user);
-
-        return "redirect:/";
+        return REDIRECT_HOME;
     }
 
     // Вихід
     @GetMapping("/logout")
     public String logout(HttpSession session) {
-        session.invalidate(); // Видаляє всю сесію
-        return "redirect:/";
+        session.invalidate();
+        return REDIRECT_HOME;
     }
 
     // Особистий кабінет
     @GetMapping("/profile")
     public ModelAndView profile(HttpSession session) {
         User user = (User) session.getAttribute("user");
-
         if (user == null) {
             return new ModelAndView("redirect:/login");
         }
-
         ModelAndView modelAndView = new ModelAndView("profile");
         modelAndView.addObject("user", user);
-
-        // Форматуємо дату
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
         String formattedDate = user.getCreatedAt().format(formatter);
         modelAndView.addObject("formattedDate", formattedDate);
-
-        // Отримуємо квитки користувача
         List<Ticket> userTickets = ticketRepository.findByPassengerPhoneAndStatus(
                 user.getPhone(),
                 Ticket.TicketStatus.ACTIVE
         );
         modelAndView.addObject("tickets", userTickets);
-
         return modelAndView;
     }
 
     @PostMapping("/profile/cancel-ticket")
     public String cancelTicket(@RequestParam Long ticketId, HttpSession session) {
         User user = (User) session.getAttribute("user");
-
         if (user == null) {
             return "redirect:/login";
         }
-
         Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
-
         if (ticket != null && ticket.getPassengerPhone().equals(user.getPhone())) {
-            // Змінюємо статус квитка
             ticket.setStatus(Ticket.TicketStatus.RETURNED);
             ticketRepository.save(ticket);
-
-            // Повертаємо вільне місце
             BusRoute route = ticket.getBusRoute();
             route.setAvailableSeats(route.getAvailableSeats() + 1);
             busRouteRepository.save(route);
         }
-
         return "redirect:/profile?cancelled=true";
     }
-
 }
