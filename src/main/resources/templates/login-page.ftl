@@ -14,6 +14,13 @@
                         </div>
                     </#if>
 
+                    <!-- ★ НОВЕ: повідомлення про блокування -->
+                    <#if RequestParameters.blocked??>
+                        <div class="alert alert-danger">
+                            ⛔ Ваш обліковий запис заблоковано. Зверніться до адміністратора.
+                        </div>
+                    </#if>
+
                     <form action="/login" method="post">
                         <div class="form-group">
                             <label>Телефон</label>

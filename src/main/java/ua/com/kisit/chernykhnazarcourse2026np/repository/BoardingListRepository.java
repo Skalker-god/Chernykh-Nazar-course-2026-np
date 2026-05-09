@@ -11,6 +11,4 @@ public interface BoardingListRepository extends JpaRepository<BoardingList, Long
 
     Optional<BoardingList> findByBusRouteAndTravelDate(BusRoute busRoute, LocalDate travelDate);
 
-    Optional<BoardingList> findByBusRouteAndTravelDateAndIsClosedFalse(BusRoute busRoute,
-                                                                       LocalDate travelDate);
 }

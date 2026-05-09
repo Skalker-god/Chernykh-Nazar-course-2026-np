@@ -4,24 +4,19 @@
     <h2>Оформлення квитка</h2>
 
     <#if error??>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong>❌ Помилка!</strong> ${error}
-            <button type="button" class="close" data-dismiss="alert">
-                <span>&times;</span>
-            </button>
-        </div>
+        <div class="alert alert-danger">❌ ${error}</div>
     </#if>
 
     <#if route??>
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
-                Рейс ${route.routeNumber}
+                Рейс ${route.routeNumber} — ${route.originCity} → ${route.finalDestination}
             </div>
             <div class="card-body">
-                <p><strong>Напрямок:</strong> ${route.finalDestination}</p>
-                <p><strong>Час відправлення:</strong> ${route.departureTime}</p>
-                <p><strong>Ціна:</strong> ${route.ticketPrice} грн</p>
-                <p><strong>Вільні місця:</strong> ${route.availableSeats}</p>
+                <p><strong>📅 Дата відправлення:</strong> ${route.departureDate}</p>
+                <p><strong>⏰ Час відправлення:</strong> ${route.departureTime}</p>
+                <p><strong>💰 Ціна:</strong> ${route.ticketPrice} грн</p>
+                <p><strong>💺 Вільні місця:</strong> ${route.availableSeats}</p>
             </div>
         </div>
 
@@ -50,10 +45,6 @@
                 </div>
 
                 <hr>
-
-                <h5>Оберіть спосіб оформлення:</h5>
-
-                <!-- Кнопка додати до кошика -->
                 <form action="/cart/add" method="post" class="mb-2">
                     <input type="hidden" name="routeId" value="${route.id}">
                     <input type="hidden" name="destination" id="destinationCart">
@@ -63,25 +54,20 @@
                     </button>
                 </form>
 
-                <!-- Кнопка купити зараз -->
                 <button type="button" class="btn btn-success btn-block" data-toggle="modal" data-target="#buyNowModal">
                     ✅ Купити зараз
                 </button>
-
-                <a href="/" class="btn btn-secondary btn-block">Назад</a>
+                <a href="/" class="btn btn-secondary btn-block mt-2">Назад</a>
             </div>
         </div>
     </#if>
 
-    <!-- Модальне вікно для швидкої покупки -->
-    <div class="modal fade" id="buyNowModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
+    <div class="modal fade" id="buyNowModal" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Оформлення квитка</h5>
-                    <button type="button" class="close" data-dismiss="modal">
-                        <span>&times;</span>
-                    </button>
+                    <h5 class="modal-title">Підтвердження квитка</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <form action="/ticket/confirm" method="post">
                     <div class="modal-body">
@@ -90,34 +76,25 @@
                         <input type="hidden" name="seatNumber" id="seatNumberDirect">
 
                         <#if user??>
-                            <!-- Якщо залогінений -->
                             <div class="alert alert-info">
-                                <strong>Дані пасажира:</strong> ${user.fullName} (${user.phone})
+                                <strong>Пасажир:</strong> ${user.fullName} (${user.phone})
                             </div>
                             <input type="hidden" name="passengerName" value="${user.fullName}">
                             <input type="hidden" name="passengerPhone" value="${user.phone}">
                         <#else>
-                            <!-- Якщо не залогінений -->
                             <div class="form-group">
                                 <label>ПІБ пасажира</label>
                                 <input type="text" name="passengerName" class="form-control" required>
                             </div>
-
                             <div class="form-group">
                                 <label>Телефон</label>
-                                <input type="tel" name="passengerPhone" class="form-control"
-                                       placeholder="+380501234567" required>
+                                <input type="tel" name="passengerPhone" class="form-control" required>
                             </div>
                         </#if>
 
-                        <div class="form-group">
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input"
-                                       id="isAdvance" name="isAdvance" value="true">
-                                <label class="form-check-label" for="isAdvance">
-                                    Попередній продаж
-                                </label>
-                            </div>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="isAdvance" name="isAdvance" value="true">
+                            <label class="form-check-label" for="isAdvance">Попередній продаж</label>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -131,14 +108,9 @@
 
     <script>
         function copyValues(type) {
-            var seat = document.getElementById('seatNumber').value;
-            var dest = document.getElementById('destination').value;
-
-            if (!dest) {
-                alert('Оберіть пункт призначення');
-                return false;
-            }
-
+            let seat = document.getElementById('seatNumber').value;
+            let dest = document.getElementById('destination').value;
+            if (!dest) { alert('Оберіть пункт призначення'); return false; }
             if (type === 'Cart') {
                 document.getElementById('seatNumberCart').value = seat;
                 document.getElementById('destinationCart').value = dest;

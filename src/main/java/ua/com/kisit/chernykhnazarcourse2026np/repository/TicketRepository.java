@@ -13,15 +13,15 @@ import java.util.List;
 
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
-
-    List<Ticket> findByBusRouteAndTravelDateAndStatus(BusRoute busRoute,
-                                                      LocalDate travelDate,
-                                                      Ticket.TicketStatus status);
-
     List<Ticket> findByPassengerPhoneAndStatus(String phone, Ticket.TicketStatus status);
+
+    List<Ticket> findByBusRouteAndStatus(BusRoute busRoute,
+                                         Ticket.TicketStatus status);
 
     @Query("SELECT t.seatNumber FROM Ticket t WHERE " +
             "t.busRoute = :route AND t.travelDate = :date AND t.status = 'ACTIVE'")
     List<Integer> findOccupiedSeats(@Param("route") BusRoute route,
                                     @Param("date") LocalDate date);
+
+
 }

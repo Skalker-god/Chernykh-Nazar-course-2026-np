@@ -20,6 +20,13 @@
                     <a class="btn btn-outline-light" href="/boarding">📋 Посадкові відомості</a>
                 </#if>
 
+                <#-- Адмін-панель тільки для адміністратора -->
+                <#if Session.user?? && Session.user.role == 'ADMIN'>
+                    <a class="btn btn-outline-warning" href="/admin/routes">⚙️ Рейси</a>
+                    <a class="btn btn-outline-warning" href="/admin/users">👥 Користувачі</a>
+                    <a class="btn btn-outline-warning" href="/admin/tickets">🎫 Квитки</a>
+                </#if>
+
                 <a class="btn btn-outline-light" href="/about">Про нас</a>
 
                 <#-- Якщо користувач залогінений -->

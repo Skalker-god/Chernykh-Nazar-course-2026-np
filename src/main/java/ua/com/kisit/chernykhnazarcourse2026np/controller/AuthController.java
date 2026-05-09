@@ -1,144 +1,131 @@
 package ua.com.kisit.chernykhnazarcourse2026np.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
-import ua.com.kisit.chernykhnazarcourse2026np.entity.BusRoute;
+import ua.com.kisit.chernykhnazarcourse2026np.entity.Ticket;
 import ua.com.kisit.chernykhnazarcourse2026np.entity.User;
 import ua.com.kisit.chernykhnazarcourse2026np.entity.UserRole;
-import ua.com.kisit.chernykhnazarcourse2026np.repository.BusRouteRepository;
 import ua.com.kisit.chernykhnazarcourse2026np.repository.TicketRepository;
 import ua.com.kisit.chernykhnazarcourse2026np.repository.UserRepository;
+import ua.com.kisit.chernykhnazarcourse2026np.service.TicketService;
+
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import ua.com.kisit.chernykhnazarcourse2026np.entity.Ticket;
-import java.time.LocalDateTime;
 
 @Controller
 public class AuthController {
 
-    // ВИПРАВЛЕННЯ 3: константа замість дублювання рядка "redirect:/" 5 разів
-    private static final String REDIRECT_HOME = "redirect:/";
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
-    // ВИПРАВЛЕННЯ 2: constructor injection замість @Autowired field injection
     private final UserRepository userRepository;
     private final TicketRepository ticketRepository;
-    private final BusRouteRepository busRouteRepository;
+    private final TicketService ticketService;
+    private final PasswordEncoder passwordEncoder;
 
+    // Конструктор – видалено зайвий BusRouteRepository
     public AuthController(UserRepository userRepository,
                           TicketRepository ticketRepository,
-                          BusRouteRepository busRouteRepository) {
+                          TicketService ticketService,
+                          PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.ticketRepository = ticketRepository;
-        this.busRouteRepository = busRouteRepository;
+        this.ticketService = ticketService;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    // Сторінка входу
+    // Показує сторінку входу або перенаправляє на головну, якщо вже залогінений
     @GetMapping("/login")
-    public ModelAndView loginPage(@RequestParam(required = false) String error,
-                                  HttpSession session) {
-        if (session.getAttribute("user") != null) {
-            return new ModelAndView(REDIRECT_HOME);
+    public ModelAndView loginPage(@RequestParam(required = false) String error) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth.getPrincipal() instanceof String)) {
+            return new ModelAndView("redirect:/");
         }
-        ModelAndView modelAndView = new ModelAndView("login-page");
+        ModelAndView mav = new ModelAndView("login-page");
         if (error != null) {
-            modelAndView.addObject("error", "Невірний телефон або пароль");
+            mav.addObject("error", "Невірний телефон або пароль");
         }
-        return modelAndView;
+        return mav;
     }
 
-    // Обробка входу
-    @PostMapping("/login")
-    public String login(@RequestParam String phone,
-                        @RequestParam String password,
-                        HttpSession session) {
-        User user = userRepository.findByPhoneAndPassword(phone, password).orElse(null);
-        if (user != null && user.getIsActive()) {
-            // ВИПРАВЛЕННЯ 1: User реалізує Serializable — тепер безпечно зберігати в сесії
-            session.setAttribute("user", user);
-            return REDIRECT_HOME;
-        }
-        return "redirect:/login?error";
-    }
-
-    // Сторінка реєстрації
+    // Показує сторінку реєстрації (якщо не авторизований)
     @GetMapping("/register")
-    public ModelAndView registerPage(@RequestParam(required = false) String error,
-                                     HttpSession session) {
-        if (session.getAttribute("user") != null) {
-            return new ModelAndView(REDIRECT_HOME);
+    public ModelAndView registerPage(@RequestParam(required = false) String error) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth.getPrincipal() instanceof String)) {
+            return new ModelAndView("redirect:/");
         }
-        ModelAndView modelAndView = new ModelAndView("register");
+        ModelAndView mav = new ModelAndView("register");
         if (error != null) {
-            modelAndView.addObject("error", "Користувач з таким телефоном вже існує");
+            mav.addObject("error", "Користувач з таким телефоном вже існує");
         }
-        return modelAndView;
+        return mav;
     }
 
-    // Обробка реєстрації
+    // Реєстрація нового користувача: хешує пароль, зберігає в БД, логує дію
     @PostMapping("/register")
     public String register(@RequestParam String fullName,
                            @RequestParam String phone,
                            @RequestParam String password,
-                           HttpSession session) {
+                           HttpServletRequest request) {
         if (userRepository.existsByPhone(phone)) {
             return "redirect:/register?error";
         }
         User user = new User();
         user.setFullName(fullName);
         user.setPhone(phone);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(password));
         user.setRole(UserRole.PASSENGER);
         user.setCreatedAt(LocalDateTime.now());
         user.setIsActive(true);
         userRepository.save(user);
-        session.setAttribute("user", user);
-        return REDIRECT_HOME;
+        log.info("РЕЄСТРАЦІЯ: {} зареєструвався з телефоном {} (IP: {})",
+                fullName, phone, request.getRemoteAddr());
+        return "redirect:/login?registered";
     }
 
-    // Вихід
-    @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
-        return REDIRECT_HOME;
-    }
-
-    // Особистий кабінет
+    // Особистий кабінет – отримує користувача з сесії, показує його квитки
     @GetMapping("/profile")
     public ModelAndView profile(HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || (auth.getPrincipal() instanceof String)) {
             return new ModelAndView("redirect:/login");
         }
-        ModelAndView modelAndView = new ModelAndView("profile");
-        modelAndView.addObject("user", user);
+        User user = (User) session.getAttribute("user");
+        if (user == null) return new ModelAndView("redirect:/login");
+        ModelAndView mav = new ModelAndView("profile");
+        mav.addObject("user", user);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
-        String formattedDate = user.getCreatedAt().format(formatter);
-        modelAndView.addObject("formattedDate", formattedDate);
+        mav.addObject("formattedDate", user.getCreatedAt().format(formatter));
         List<Ticket> userTickets = ticketRepository.findByPassengerPhoneAndStatus(
-                user.getPhone(),
-                Ticket.TicketStatus.ACTIVE
-        );
-        modelAndView.addObject("tickets", userTickets);
-        return modelAndView;
+                user.getPhone(), Ticket.TicketStatus.ACTIVE);
+        mav.addObject("tickets", userTickets);
+        return mav;
     }
 
+    // Скасування квитка – перевіряє власника, логує дію
     @PostMapping("/profile/cancel-ticket")
-    public String cancelTicket(@RequestParam Long ticketId, HttpSession session) {
-        User user = (User) session.getAttribute("user");
-        if (user == null) {
+    public String cancelTicket(@RequestParam Long ticketId, HttpServletRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || (auth.getPrincipal() instanceof String)) {
             return "redirect:/login";
         }
+        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        String phone = userDetails.getUsername();
         Ticket ticket = ticketRepository.findById(ticketId).orElse(null);
-        if (ticket != null && ticket.getPassengerPhone().equals(user.getPhone())) {
-            ticket.setStatus(Ticket.TicketStatus.RETURNED);
-            ticketRepository.save(ticket);
-            BusRoute route = ticket.getBusRoute();
-            route.setAvailableSeats(route.getAvailableSeats() + 1);
-            busRouteRepository.save(route);
+        if (ticket != null && ticket.getPassengerPhone().equals(phone)) {
+            ticketService.cancelTicket(ticketId);
+            log.info("СКАСУВАННЯ: {} скасував квиток ID {} (IP: {})",
+                    phone, ticketId, request.getRemoteAddr());
         }
         return "redirect:/profile?cancelled=true";
     }
