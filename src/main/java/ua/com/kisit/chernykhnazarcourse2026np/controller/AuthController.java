@@ -32,7 +32,6 @@ public class AuthController {
     private final TicketService ticketService;
     private final PasswordEncoder passwordEncoder;
 
-    // Конструктор – видалено зайвий BusRouteRepository
     public AuthController(UserRepository userRepository,
                           TicketRepository ticketRepository,
                           TicketService ticketService,

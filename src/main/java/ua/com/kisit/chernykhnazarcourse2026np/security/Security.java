@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,6 +13,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import ua.com.kisit.chernykhnazarcourse2026np.entity.User;
 import ua.com.kisit.chernykhnazarcourse2026np.repository.UserRepository;
 
@@ -39,14 +41,23 @@ public class Security {
         return phone -> {
             User user = userRepository.findByPhone(phone)
                     .orElseThrow(() -> new UsernameNotFoundException("Користувач не знайдений"));
-            if (!user.getIsActive()) {
-                throw new UsernameNotFoundException("Акаунт заблоковано");
-            }
             return org.springframework.security.core.userdetails.User
                     .withUsername(user.getPhone())
                     .password(user.getPassword())
                     .authorities(Collections.singletonList(() -> "ROLE_" + user.getRole().name()))
+                    .disabled(!user.getIsActive())
                     .build();
+        };
+    }
+
+    @Bean
+    public AuthenticationFailureHandler authenticationFailureHandler() {
+        return (request, response, exception) -> {
+            if (exception instanceof DisabledException) {
+                response.sendRedirect("/login?blocked");
+            } else {
+                response.sendRedirect("/login?error");
+            }
         };
     }
 
@@ -76,7 +87,7 @@ public class Security {
                                     phone, request.getRemoteAddr());
                             response.sendRedirect("/");
                         })
-                        .failureUrl("/login?error")
+                        .failureHandler(authenticationFailureHandler())
                         .permitAll()
                 )
                 .logout(logout -> logout
