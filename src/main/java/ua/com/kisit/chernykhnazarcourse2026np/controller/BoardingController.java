@@ -55,7 +55,6 @@ public class BoardingController {
         }
 
         LocalDate travelDate = route.getDepartureDate();
-
         // Шукаємо відомість, або створюємо нову
         BoardingList boardingList = boardingListRepository
                 .findByBusRouteAndTravelDate(route, travelDate)
@@ -71,9 +70,10 @@ public class BoardingController {
         // Синхронізуємо квитки з відомістю: додаємо нових пасажирів
         List<Ticket> activeTickets = ticketRepository
                 .findByBusRouteAndStatus(route, Ticket.TicketStatus.ACTIVE);
-        Set<Long> existingTicketIds = boardingPassengerRepository
-                .findByBoardingListId(boardingList.getId())
-                .stream()
+
+        List<BoardingPassenger> existingPassengers = boardingPassengerRepository
+                .findByBoardingListId(boardingList.getId());
+        Set<Long> existingTicketIds = existingPassengers.stream()
                 .map(bp -> bp.getTicket().getId())
                 .collect(Collectors.toSet());
 
@@ -86,6 +86,11 @@ public class BoardingController {
                 boardingPassengerRepository.save(bp);
             }
         }
+
+        // Оновлюємо колекцію, використовуючи методи add/remove
+        List<BoardingPassenger> freshPassengers = boardingPassengerRepository.findByBoardingListId(boardingList.getId());
+        boardingList.getPassengers().clear();
+        boardingList.getPassengers().addAll(freshPassengers);
 
         ModelAndView mav = new ModelAndView("boarding-list");
         mav.addObject("route", route);
