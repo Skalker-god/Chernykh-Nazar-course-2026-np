@@ -1,81 +1,167 @@
 USE `chernykh-nazar-course-2026-np`;
 
-SET FOREIGN_KEY_CHECKS=0;
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS boarding_passengers;
+DROP TABLE IF EXISTS boarding_lists;
+DROP TABLE IF EXISTS tickets;
+DROP TABLE IF EXISTS bus_routes;
+DROP TABLE IF EXISTS users;
+SET FOREIGN_KEY_CHECKS = 1;
 
--- Видалення таблиць якщо існують
-DROP TABLE IF EXISTS `boarding_passengers`;
-DROP TABLE IF EXISTS `boarding_lists`;
-DROP TABLE IF EXISTS `tickets`;
-DROP TABLE IF EXISTS `users`;
-DROP TABLE IF EXISTS `bus_routes`;
+CREATE TABLE users (
+                       id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                       full_name VARCHAR(255) NOT NULL,
+                       phone VARCHAR(255) NOT NULL UNIQUE,
+                       password VARCHAR(255) NOT NULL,
+                       role VARCHAR(20) NOT NULL,
+                       created_at DATETIME NOT NULL,
+                       is_active BOOLEAN NOT NULL
+);
 
-SET FOREIGN_KEY_CHECKS=1;
+CREATE TABLE bus_routes (
+                            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                            route_number VARCHAR(255) NOT NULL UNIQUE,
+                            origin_city VARCHAR(255) NOT NULL,
+                            final_destination VARCHAR(255) NOT NULL,
+                            intermediate_stops TEXT,
+                            departure_date DATE NOT NULL,
+                            departure_time TIME NOT NULL,
+                            total_seats INT NOT NULL,
+                            available_seats INT NOT NULL,
+                            ticket_price DECIMAL(10,2) NOT NULL,
+                            is_active BOOLEAN NOT NULL
+);
 
--- Таблиця автобусних рейсів
-CREATE TABLE `bus_routes` (
-                              `id` BIGINT NOT NULL AUTO_INCREMENT,
-                              `route_number` VARCHAR(50) NOT NULL UNIQUE,
-                              `final_destination` VARCHAR(255) NOT NULL,
-                              `intermediate_stops` TEXT,
-                              `departure_time` TIME NOT NULL,
-                              `total_seats` INT NOT NULL DEFAULT 45,
-                              `available_seats` INT NOT NULL DEFAULT 45,
-                              `ticket_price` DOUBLE NOT NULL DEFAULT 0.0,
-                              `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
-                              PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE tickets (
+                         id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                         route_id BIGINT NOT NULL,
+                         passenger_name VARCHAR(255) NOT NULL,
+                         passenger_phone VARCHAR(255) NOT NULL,
+                         seat_number INT NOT NULL,
+                         travel_date DATE NOT NULL,
+                         destination VARCHAR(255) NOT NULL,
+                         status VARCHAR(20) NOT NULL,
+                         purchase_date_time DATETIME NOT NULL,
+                         is_advance_purchase BOOLEAN NOT NULL,
+                         FOREIGN KEY (route_id) REFERENCES bus_routes(id) ON DELETE CASCADE
+);
 
--- Таблиця користувачів
-CREATE TABLE `users` (
-                         `id` BIGINT NOT NULL AUTO_INCREMENT,
-                         `full_name` VARCHAR(255) NOT NULL,
-                         `phone` VARCHAR(20) NOT NULL UNIQUE,
-                         `password` VARCHAR(255) NOT NULL,
-                         `role` VARCHAR(20) NOT NULL DEFAULT 'PASSENGER',
-                         `created_at` DATETIME NOT NULL,
-                         `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
-                         PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE boarding_lists (
+                                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                                route_id BIGINT NOT NULL,
+                                travel_date DATE NOT NULL,
+                                created_at DATETIME NOT NULL,
+                                is_closed BOOLEAN NOT NULL,
+                                FOREIGN KEY (route_id) REFERENCES bus_routes(id) ON DELETE CASCADE
+);
 
--- Таблиця квитків
-CREATE TABLE `tickets` (
-                           `id` BIGINT NOT NULL AUTO_INCREMENT,
-                           `route_id` BIGINT NOT NULL,
-                           `passenger_name` VARCHAR(255) NOT NULL,
-                           `passenger_phone` VARCHAR(20) NOT NULL,
-                           `seat_number` INT NOT NULL,
-                           `travel_date` DATE NOT NULL,
-                           `destination` VARCHAR(255) NOT NULL,
-                           `status` VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-                           `purchase_date_time` DATETIME NOT NULL,
-                           `is_advance_purchase` BOOLEAN NOT NULL DEFAULT FALSE,
-                           PRIMARY KEY (`id`),
-                           FOREIGN KEY (`route_id`) REFERENCES `bus_routes`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE boarding_passengers (
+                                     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                                     boarding_list_id BIGINT NOT NULL,
+                                     ticket_id BIGINT NOT NULL UNIQUE,
+                                     has_boarded BOOLEAN NOT NULL,
+                                     FOREIGN KEY (boarding_list_id) REFERENCES boarding_lists(id) ON DELETE CASCADE,
+                                     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE
+);
 
--- Таблиця посадкових відомостей
-CREATE TABLE `boarding_lists` (
-                                  `id` BIGINT NOT NULL AUTO_INCREMENT,
-                                  `route_id` BIGINT NOT NULL,
-                                  `travel_date` DATE NOT NULL,
-                                  `created_at` DATETIME NOT NULL,
-                                  `is_closed` BOOLEAN NOT NULL DEFAULT FALSE,
-                                  PRIMARY KEY (`id`),
-                                  FOREIGN KEY (`route_id`) REFERENCES `bus_routes`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO users (id, full_name, phone, password, role, created_at, is_active) VALUES
+                                                                                    (1, 'Іванов Іван Іванович', '+380501234567', '123456', 'PASSENGER', '2026-04-27 02:50:50', true),
+                                                                                    (2, 'Петренко Марія Олегівна', '+380671234567', '123456', 'PASSENGER', '2026-04-27 02:50:50', true),
+                                                                                    (3, 'Сидоренко Олександр Петрович', '+380931234567', '123456', 'PASSENGER', '2026-04-27 02:50:50', true),
+                                                                                    (4, 'Коваленко Ірина Миколаївна', '+380631234567', '123456', 'PASSENGER', '2026-04-27 02:50:50', true),
+                                                                                    (5, 'Шевченко Андрій Васильович', '+380991234567', '123456', 'PASSENGER', '2026-04-27 02:50:50', true),
+                                                                                    (6, 'Мельник Олена Петрівна', '+380505555555', '123456', 'PASSENGER', '2026-04-27 02:50:50', true),
+                                                                                    (7, 'Ткаченко Василь Миколайович', '+380666666666', '123456', 'PASSENGER', '2026-04-27 02:50:50', true),
+                                                                                    (8, 'Бондаренко Наталія Сергіївна', '+380777777777', '123456', 'PASSENGER', '2026-04-27 02:50:50', true);
 
--- Таблиця пасажирів у посадковій відомості
-CREATE TABLE `boarding_passengers` (
-                                       `id` BIGINT NOT NULL AUTO_INCREMENT,
-                                       `boarding_list_id` BIGINT NOT NULL,
-                                       `ticket_id` BIGINT NOT NULL,
-                                       `has_boarded` BOOLEAN NOT NULL DEFAULT FALSE,
-                                       PRIMARY KEY (`id`),
-                                       FOREIGN KEY (`boarding_list_id`) REFERENCES `boarding_lists`(`id`) ON DELETE CASCADE,
-                                       FOREIGN KEY (`ticket_id`) REFERENCES `tickets`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO bus_routes (id, route_number, origin_city, final_destination, intermediate_stops, departure_date, departure_time, total_seats, available_seats, ticket_price, is_active) VALUES
+                                                                                                                                                                                         (1, '101', 'Київ', 'Львів', 'Житомир, Рівне', '2026-05-01', '08:00:00', 50, 50, 350.00, true),
+                                                                                                                                                                                         (2, '102', 'Київ', 'Одеса', 'Умань, Миколаїв', '2026-05-01', '10:30:00', 48, 48, 420.00, true),
+                                                                                                                                                                                         (3, '103', 'Харків', 'Київ', 'Полтава', '2026-05-02', '07:15:00', 52, 52, 380.00, true),
+                                                                                                                                                                                         (4, '104', 'Львів', 'Одеса', 'Тернопіль, Вінниця', '2026-05-02', '09:45:00', 45, 45, 500.00, true),
+                                                                                                                                                                                         (5, '105', 'Дніпро', 'Львів', 'Кропивницький, Вінниця', '2026-05-03', '06:30:00', 55, 55, 620.00, true),
+                                                                                                                                                                                         (6, '106', 'Одеса', 'Харків', 'Миколаїв, Дніпро', '2026-05-03', '15:20:00', 50, 50, 550.00, true),
+                                                                                                                                                                                         (7, '107', 'Київ', 'Запоріжжя', 'Кременчук, Дніпро', '2026-05-04', '22:00:00', 48, 48, 470.00, true),
+                                                                                                                                                                                         (8, '108', 'Львів', 'Київ', 'Рівне, Житомир', '2026-05-05', '16:00:00', 50, 50, 350.00, true),
+                                                                                                                                                                                         (9, '109', 'Вінниця', 'Одеса', 'Умань', '2026-05-06', '08:30:00', 44, 44, 300.00, true),
+                                                                                                                                                                                         (10, '110', 'Херсон', 'Київ', 'Миколаїв, Умань', '2026-05-07', '05:45:00', 46, 46, 490.00, true),
+                                                                                                                                                                                         (11, '111', 'Київ', 'Чернівці', 'Житомир, Хмельницький', '2026-05-08', '23:00:00', 52, 52, 530.00, true),
+                                                                                                                                                                                         (12, '112', 'Івано-Франківськ', 'Київ', 'Львів, Рівне', '2026-05-10', '07:00:00', 50, 50, 510.00, true),
+                                                                                                                                                                                         (13, '113', 'Суми', 'Харків', '—', '2026-05-12', '12:15:00', 40, 40, 180.00, true),
+                                                                                                                                                                                         (14, '114', 'Київ', 'Харків', 'Полтава', '2026-05-15', '09:00:00', 54, 54, 400.00, true),
+                                                                                                                                                                                         (15, '115', 'Одеса', 'Львів', 'Вінниця, Тернопіль', '2026-05-16', '17:30:00', 48, 48, 580.00, true),
+                                                                                                                                                                                         (16, '116', 'Дніпро', 'Київ', 'Кременчук', '2026-05-18', '08:00:00', 50, 50, 310.00, true),
+                                                                                                                                                                                         (17, '117', 'Запоріжжя', 'Київ', 'Дніпро', '2026-05-20', '13:20:00', 52, 52, 450.00, true),
+                                                                                                                                                                                         (18, '118', 'Рівне', 'Львів', 'Луцьк', '2026-05-22', '19:00:00', 45, 45, 210.00, true),
+                                                                                                                                                                                         (19, '119', 'Полтава', 'Одеса', 'Кропивницький', '2026-05-25', '06:00:00', 50, 50, 430.00, true),
+                                                                                                                                                                                         (20, '120', 'Київ', 'Ужгород', 'Львів, Мукачево', '2026-05-27', '21:30:00', 50, 50, 720.00, true),
+                                                                                                                                                                                         (21, '121', 'Чернігів', 'Київ', '—', '2026-05-29', '14:00:00', 40, 40, 150.00, true),
+                                                                                                                                                                                         (22, '122', 'Кропивницький', 'Дніпро', '—', '2026-05-31', '11:00:00', 44, 44, 220.00, true),
+                                                                                                                                                                                         (23, '123', 'Миколаїв', 'Одеса', '—', '2026-06-01', '09:15:00', 42, 42, 170.00, true),
+                                                                                                                                                                                         (24, '124', 'Тернопіль', 'Київ', 'Хмельницький, Житомир', '2026-06-02', '07:30:00', 48, 48, 390.00, true),
+                                                                                                                                                                                         (25, '125', 'Луцьк', 'Львів', '—', '2026-06-03', '16:45:00', 40, 40, 190.00, true),
+                                                                                                                                                                                         (26, '126', 'Хмельницький', 'Вінниця', '—', '2026-06-05', '10:00:00', 38, 38, 160.00, true),
+                                                                                                                                                                                         (27, '127', 'Київ', 'Маріуполь', 'Полтава, Дніпро, Запоріжжя', '2026-06-07', '08:00:00', 55, 55, 680.00, true),
+                                                                                                                                                                                         (28, '128', 'Львів', 'Івано-Франківськ', '—', '2026-06-08', '18:00:00', 45, 45, 230.00, true),
+                                                                                                                                                                                         (29, '129', 'Одеса', 'Київ', 'Умань', '2026-06-10', '20:00:00', 50, 50, 420.00, true),
+                                                                                                                                                                                         (30, '130', 'Харків', 'Дніпро', '—', '2026-06-11', '06:20:00', 46, 46, 260.00, true),
+                                                                                                                                                                                         (31, '131', 'Вінниця', 'Київ', '—', '2026-06-12', '15:30:00', 44, 44, 280.00, true),
+                                                                                                                                                                                         (32, '132', 'Житомир', 'Київ', '—', '2026-06-13', '05:50:00', 48, 48, 120.00, true),
+                                                                                                                                                                                         (33, '133', 'Черкаси', 'Київ', '—', '2026-06-14', '12:40:00', 42, 42, 140.00, true),
+                                                                                                                                                                                         (34, '134', 'Суми', 'Київ', '—', '2026-06-15', '17:00:00', 40, 40, 210.00, true),
+                                                                                                                                                                                         (35, '135', 'Київ', 'Черкаси', '—', '2026-05-04', '09:30:00', 50, 50, 140.00, true),
+                                                                                                                                                                                         (36, '136', 'Київ', 'Вінниця', '—', '2026-05-06', '14:00:00', 52, 52, 250.00, true),
+                                                                                                                                                                                         (37, '137', 'Львів', 'Ужгород', 'Мукачево', '2026-05-09', '08:15:00', 48, 48, 380.00, true),
+                                                                                                                                                                                         (38, '138', 'Одеса', 'Запоріжжя', 'Миколаїв, Херсон', '2026-05-11', '22:30:00', 50, 50, 520.00, true),
+                                                                                                                                                                                         (39, '139', 'Дніпро', 'Харків', '—', '2026-05-13', '11:45:00', 46, 46, 240.00, true),
+                                                                                                                                                                                         (40, '140', 'Запоріжжя', 'Дніпро', '—', '2026-05-17', '19:15:00', 44, 44, 160.00, true),
+                                                                                                                                                                                         (41, '141', 'Харків', 'Львів', 'Полтава, Київ, Рівне', '2026-05-19', '07:00:00', 55, 55, 690.00, true),
+                                                                                                                                                                                         (42, '142', 'Львів', 'Харків', 'Тернопіль, Київ, Полтава', '2026-05-21', '21:00:00', 55, 55, 700.00, true),
+                                                                                                                                                                                         (43, '143', 'Київ', 'Дніпро', 'Кременчук', '2026-05-23', '10:00:00', 54, 54, 330.00, true),
+                                                                                                                                                                                         (44, '144', 'Київ', 'Полтава', '—', '2026-05-24', '18:30:00', 48, 48, 200.00, true),
+                                                                                                                                                                                         (45, '145', 'Одеса', 'Дніпро', 'Миколаїв', '2026-05-26', '14:00:00', 50, 50, 450.00, true),
+                                                                                                                                                                                         (46, '146', 'Львів', 'Чернівці', 'Івано-Франківськ', '2026-05-28', '09:00:00', 46, 46, 300.00, true),
+                                                                                                                                                                                         (47, '147', 'Ужгород', 'Львів', 'Мукачево', '2026-05-30', '16:30:00', 44, 44, 370.00, true),
+                                                                                                                                                                                         (48, '148', 'Маріуполь', 'Київ', 'Запоріжжя, Дніпро, Полтава', '2026-06-02', '05:00:00', 52, 52, 670.00, true),
+                                                                                                                                                                                         (49, '149', 'Київ', 'Луцьк', 'Житомир, Рівне', '2026-06-04', '12:00:00', 50, 50, 340.00, true),
+                                                                                                                                                                                         (50, '150', 'Чернівці', 'Львів', '—', '2026-06-06', '20:15:00', 42, 42, 280.00, true);
 
--- Індекси для оптимізації
-CREATE INDEX idx_tickets_route_date ON tickets(route_id, travel_date, status);
-CREATE INDEX idx_users_phone ON users(phone);
-CREATE INDEX idx_boarding_lists_route_date ON boarding_lists(route_id, travel_date);
+INSERT INTO tickets (id, route_id, passenger_name, passenger_phone, seat_number, travel_date, destination, status, purchase_date_time, is_advance_purchase) VALUES
+                                                                                                                                                                (1, 1, 'Іванов Іван Іванович', '+380501234567', 5, '2026-05-01', 'Львів', 'ACTIVE', '2026-04-20 10:00:00', false),
+                                                                                                                                                                (2, 1, 'Петренко Марія Олегівна', '+380671234567', 12, '2026-05-01', 'Львів', 'ACTIVE', '2026-04-21 14:30:00', true),
+                                                                                                                                                                (3, 1, 'Сидоренко Олександр Петрович', '+380931234567', 18, '2026-05-01', 'Львів', 'RETURNED', '2026-04-22 09:15:00', false),
+                                                                                                                                                                (4, 1, 'Шевченко Андрій Васильович', '+380991234567', 7, '2026-05-01', 'Львів', 'ACTIVE', '2026-04-23 08:20:00', false),
+                                                                                                                                                                (5, 1, 'Гість Петро Степанович', '+380999999111', 22, '2026-05-01', 'Львів', 'ACTIVE', '2026-04-24 18:45:00', true),
+                                                                                                                                                                (6, 2, 'Мельник Олена Петрівна', '+380505555555', 3, '2026-05-01', 'Одеса', 'ACTIVE', '2026-04-18 11:45:00', false),
+                                                                                                                                                                (7, 2, 'Ткаченко Василь Миколайович', '+380666666666', 16, '2026-05-01', 'Одеса', 'ACTIVE', '2026-04-22 13:20:00', true),
+                                                                                                                                                                (8, 2, 'Коваленко Ірина Миколаївна', '+380631234567', 25, '2026-05-01', 'Одеса', 'RETURNED', '2026-04-24 16:00:00', false),
+                                                                                                                                                                (9, 2, 'Бондаренко Наталія Сергіївна', '+380777777777', 8, '2026-05-01', 'Одеса', 'ACTIVE', '2026-04-25 19:30:00', false),
+                                                                                                                                                                (10, 2, 'Гість Савенко Дмитро', '+380951234567', 37, '2026-05-01', 'Одеса', 'ACTIVE', '2026-04-26 07:15:00', true),
+                                                                                                                                                                (11, 2, 'Петренко Марія Олегівна', '+380671234567', 42, '2026-05-01', 'Одеса', 'ACTIVE', '2026-04-27 14:00:00', false),
+                                                                                                                                                                (12, 3, 'Іванов Іван Іванович', '+380501234567', 9, '2026-05-02', 'Київ', 'ACTIVE', '2026-04-23 09:30:00', false),
+                                                                                                                                                                (13, 3, 'Мельник Олена Петрівна', '+380505555555', 24, '2026-05-02', 'Київ', 'ACTIVE', '2026-04-25 15:00:00', true),
+                                                                                                                                                                (14, 3, 'Ткаченко Василь Миколайович', '+380666666666', 31, '2026-05-02', 'Київ', 'ACTIVE', '2026-04-26 17:30:00', false),
+                                                                                                                                                                (15, 3, 'Гість Романенко Ігор', '+380933333333', 44, '2026-05-02', 'Київ', 'RETURNED', '2026-04-27 20:15:00', false),
+                                                                                                                                                                (16, 7, 'Шевченко Андрій Васильович', '+380991234567', 10, '2026-05-04', 'Запоріжжя', 'ACTIVE', '2026-04-29 12:00:00', false),
+                                                                                                                                                                (17, 7, 'Коваленко Ірина Миколаївна', '+380631234567', 22, '2026-05-04', 'Запоріжжя', 'ACTIVE', '2026-04-30 09:15:00', true),
+                                                                                                                                                                (18, 7, 'Бондаренко Наталія Сергіївна', '+380777777777', 35, '2026-05-04', 'Запоріжжя', 'ACTIVE', '2026-05-01 14:45:00', false),
+                                                                                                                                                                (19, 35, 'Сидоренко Олександр Петрович', '+380931234567', 4, '2026-05-04', 'Черкаси', 'ACTIVE', '2026-04-25 08:00:00', false),
+                                                                                                                                                                (20, 35, 'Петренко Марія Олегівна', '+380671234567', 11, '2026-05-04', 'Черкаси', 'ACTIVE', '2026-04-26 10:30:00', true),
+                                                                                                                                                                (21, 35, 'Іванов Іван Іванович', '+380501234567', 28, '2026-05-04', 'Черкаси', 'ACTIVE', '2026-04-27 16:20:00', false),
+                                                                                                                                                                (22, 35, 'Гість Ольга Вікторівна', '+380987654321', 39, '2026-05-04', 'Черкаси', 'RETURNED', '2026-04-28 11:00:00', false),
+                                                                                                                                                                (23, 41, 'Мельник Олена Петрівна', '+380505555555', 7, '2026-05-19', 'Львів', 'ACTIVE', '2026-05-10 09:00:00', false),
+                                                                                                                                                                (24, 41, 'Ткаченко Василь Миколайович', '+380666666666', 19, '2026-05-19', 'Львів', 'ACTIVE', '2026-05-12 14:30:00', true),
+                                                                                                                                                                (25, 41, 'Шевченко Андрій Васильович', '+380991234567', 33, '2026-05-19', 'Львів', 'RETURNED', '2026-05-15 18:45:00', false);
+
+SET SQL_SAFE_UPDATES = 0;
+
+UPDATE bus_routes br
+    LEFT JOIN (
+        SELECT route_id, COUNT(*) AS active_count
+        FROM tickets
+        WHERE status = 'ACTIVE'
+        GROUP BY route_id
+    ) t ON br.id = t.route_id
+SET br.available_seats = br.total_seats - COALESCE(t.active_count, 0);
+
+SET SQL_SAFE_UPDATES = 1;
